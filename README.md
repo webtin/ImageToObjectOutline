@@ -1,0 +1,1 @@
+In this project I try to generate vector files from photos to generate tool trays with good fit for irregular shaped objects
