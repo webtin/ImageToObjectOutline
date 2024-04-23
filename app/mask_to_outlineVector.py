@@ -1,5 +1,12 @@
 import cv2
+import numpy as np
 
+def do_nothing(nothing):
+    '''
+    A function that does nothing
+    required for cv2 trackbar
+    '''
+    pass
 
 def write_svg_file(contour, scaling_factor, height, width):
     """
@@ -46,56 +53,82 @@ mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
 # define gaussian blur value
 gaussianBlurValue = 21
+max_gaussianBlurValue = 100
 
-# apply gaussian blur to smooth the mask
-blurred_mask = cv2.GaussianBlur(mask, (gaussianBlurValue, gaussianBlurValue), 0)
+# define epsilon value
 
-# apply threshold
-ret, thresh = cv2.threshold(blurred_mask, 127, 255, 0)
-
-# cv2.imshow('mask', mask)
-# cv2.imshow('blurred_mask mask', blurred_mask)
-# cv2.imshow('threshold mask', thresh)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-
-full_contour_image = image
-reduced_contour_image = image
-
-# find contours in the thresholded image and initialize the 
-contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-# get number of objects from console
-# number_of_contours = int(input("Enter number of objects: "))
-number_of_contours = 7
-
-longestContours = sorted(contours, key=cv2.contourArea, reverse=True)[1:number_of_contours+1]
-
-reduced_contours = []
-for contour in longestContours:
-    perimeter = cv2.arcLength(contour, True)
-    epsilon = 0.0005 * perimeter
-    reduced_contour  = cv2.approxPolyDP(contour, epsilon, True)
-    reduced_contours.append(reduced_contour)
-
-longestContours = reduced_contours
-
-for i, contour in enumerate(longestContours):  
-    cv2.drawContours(full_contour_image, [contour], -1, colors[i], 2)
-    print("len of contour " + str(i) + ": " + str(len(contour)))
-
-    # Draw the points of the contour
-    for point in contour:
-        # print(tuple(point[0]))
-        cv2.circle(full_contour_image, tuple(point[0]), 2, (0, 0, 0), -1)
-
-# reduce number of points in contours
-# https://stackoverflow.com/questions/66753026/opencv-smoother-contour
+epsilon_factor = 1
+max_epsilon_factor = 1000
+# epsilon factor 0.0001 .. 0.01
 
 
 
-cv2.imshow('Contours', full_contour_image)
+# create sliders
+cv2.namedWindow("Slider")
+cv2.resizeWindow("Slider", 640, 480)
+cv2.createTrackbar("Blur", "Slider", gaussianBlurValue, max_gaussianBlurValue, do_nothing)
+cv2.createTrackbar("Epsilon", "Slider", epsilon_factor, max_epsilon_factor, do_nothing)
+
+# create mask with ROI HSV color range in a while loop to fine adjust HSV color range of background
+while True:
+
+    gaussianBlurValue = cv2.getTrackbarPos("Blur", "Slider")
+
+    if gaussianBlurValue % 2 == 0:
+        gaussianBlurValue += 1
+
+    epsilon_factor = cv2.getTrackbarPos("Epsilon", "Slider")
+
+    # apply gaussian blur to smooth the mask
+    blurred_mask = cv2.GaussianBlur(mask, (gaussianBlurValue, gaussianBlurValue), 0)
+
+    # apply threshold
+    ret, thresh = cv2.threshold(blurred_mask, 127, 255, 0)
+
+    # cv2.imshow('mask', mask)
+    # cv2.imshow('blurred_mask mask', blurred_mask)
+    # cv2.imshow('threshold mask', thresh)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+
+    full_contour_image = image.copy()
+    reduced_contour_image = image
+
+    # find contours in the thresholded image and initialize the 
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # get number of objects from console
+    # number_of_contours = int(input("Enter number of objects: "))
+    number_of_contours = 7
+
+    longestContours = sorted(contours, key=cv2.contourArea, reverse=True)[1:number_of_contours+1]
+
+    reduced_contours = []
+    for contour in longestContours:
+        perimeter = cv2.arcLength(contour, True)
+        epsilon = epsilon_factor/(100*max_epsilon_factor) * perimeter
+        reduced_contour  = cv2.approxPolyDP(contour, epsilon, True)
+        reduced_contours.append(reduced_contour)
+
+    longestContours = reduced_contours
+
+    for i, contour in enumerate(longestContours):  
+        cv2.drawContours(full_contour_image, [contour], -1, colors[i], 1)
+        print("len of contour " + str(i) + ": " + str(len(contour)))
+
+        # Draw the points of the contour
+        for point in contour:
+            # print(tuple(point[0]))
+            cv2.circle(full_contour_image, tuple(point[0]), 1, (0, 0, 0), -1)
+
+    # reduce number of points in contours
+    # https://stackoverflow.com/questions/66753026/opencv-smoother-contour
+
+    cv2.imshow('Contours', full_contour_image)
+
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
 
 
 
