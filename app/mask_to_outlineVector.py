@@ -49,7 +49,7 @@ image = cv2.imread("data\source_images\PXL_20240326_134928380_2.jpg")
 
 # load mask image
 mask = cv2.imread(r'data\processed\output_image2.jpg')
-mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+mask_GRAY = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
 # define gaussian blur value
 gaussianBlurValue = 21
@@ -61,11 +61,14 @@ epsilon_factor = 1
 max_epsilon_factor = 1000
 # epsilon factor 0.0001 .. 0.01
 
-
+# define outline treshold value
+outline_treshold = 127
+max_outline_treshold = 255
 
 # create sliders
 cv2.namedWindow("Slider")
 cv2.resizeWindow("Slider", 640, 480)
+cv2.createTrackbar("Outline Treshold", "Slider", outline_treshold, max_outline_treshold, do_nothing)
 cv2.createTrackbar("Blur", "Slider", gaussianBlurValue, max_gaussianBlurValue, do_nothing)
 cv2.createTrackbar("Epsilon", "Slider", epsilon_factor, max_epsilon_factor, do_nothing)
 
@@ -80,10 +83,13 @@ while True:
     epsilon_factor = cv2.getTrackbarPos("Epsilon", "Slider")
 
     # apply gaussian blur to smooth the mask
-    blurred_mask = cv2.GaussianBlur(mask, (gaussianBlurValue, gaussianBlurValue), 0)
+    blurred_mask_GRAY = cv2.GaussianBlur(mask_GRAY, (gaussianBlurValue, gaussianBlurValue), 0)
+
+    blurred_mask = cv2.cvtColor(blurred_mask_GRAY, cv2.COLOR_GRAY2BGR)
 
     # apply threshold
-    ret, thresh = cv2.threshold(blurred_mask, 127, 255, 0)
+    outline_treshold = cv2.getTrackbarPos("Outline Treshold", "Slider")
+    ret, thresh = cv2.threshold(blurred_mask_GRAY, outline_treshold, 255, 0)
 
     # cv2.imshow('mask', mask)
     # cv2.imshow('blurred_mask mask', blurred_mask)
@@ -114,7 +120,8 @@ while True:
     longestContours = reduced_contours
 
     for i, contour in enumerate(longestContours):  
-        cv2.drawContours(full_contour_image, [contour], -1, colors[i], 1)
+        cv2.drawContours(full_contour_image, [contour], -1, colors[i], 2)
+        cv2.drawContours(blurred_mask, [contour], -1, colors[i], 2)
         print("len of contour " + str(i) + ": " + str(len(contour)))
 
         # Draw the points of the contour
@@ -124,8 +131,9 @@ while True:
 
     # reduce number of points in contours
     # https://stackoverflow.com/questions/66753026/opencv-smoother-contour
+    stacked_images = np.hstack([full_contour_image, blurred_mask])
 
-    cv2.imshow('Contours', full_contour_image)
+    cv2.imshow('Contours', stacked_images)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
