@@ -1,3 +1,5 @@
+print("vector_processing loaded")
+
 def write_svg_file(contour, scaling_factor, height, width):
     """
     Write an SVG file with the given contour, scaling factor, height, and width.

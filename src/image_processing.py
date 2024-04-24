@@ -1,21 +1,8 @@
 ### Imports
-import cv2
 import numpy as np
+import cv2
 
-### Variables and Default Values
-
-# default image path
-image = cv2.imread("data\source_images\PXL_20240326_134928380_2.jpg")
-
-# Define the color-divisor to split the color space
-Color_reduction_divisor = 64
-
-# Define standard color depth
-standard_color_depth = 255
-
-# Define default gaussian blur value
-gaussian_blur_value = 13
-
+print("image processing loaded")
 
 ### Functions
 def do_nothing(nothing):

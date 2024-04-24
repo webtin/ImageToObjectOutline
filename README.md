@@ -16,3 +16,17 @@ Tray for 3D printer Tools
 ## Why use chroma key method instead of treshold method like Otsu?
 
 When detecting multiple objects with different objects the treshold method for contour detection becomes unreliable. Sometimes it breakes for a single object when this object is made from different colored materials. Therefore I opted for a more robust chroma keying approach.
+
+# workflow
+
+## take picture
+
+## chroma key background
+
+- select pixel range from background
+- iterate over pixels to get lower and upper limit
+- finetune with sliders
+
+## run contour detection on chroma keyed image
+
+- 

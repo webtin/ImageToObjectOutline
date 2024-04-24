@@ -1,2 +1,0 @@
-import outline2vector
-
