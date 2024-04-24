@@ -11,7 +11,7 @@ The photos require a high contrast between the objects and background. Its best 
 ### Example tray 
 
 Tray for 3D printer Tools
-<img src="Tray_3D_printer_tools.jpg" width="100%"/>
+<img src="media/Tray_3D_printer_tools.jpg" width="100%"/>
 
 ## Why use chroma key method instead of treshold method like Otsu?
 
