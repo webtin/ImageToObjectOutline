@@ -17,23 +17,25 @@ def reduce_color(image: np.ndarray, color_divisor: int) -> np.ndarray:
 
     return quantized
 
-def get_ROI_HSV_colorspace(image: np.ndarray) -> np.ndarray:
-    # select ROI (region of interest) to get baseline values for background color space
+def get_ROI(image: np.ndarray) -> np.ndarray:
+    # select ROI (region of interest)
     roi = cv2.selectROI("Image", image)
-    # # debug
-    # print(roi)
 
     # extract ROI area as new array
-    roi_image = hsv_image[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
+    roi_image = image[int(roi[1]):int(roi[1] + roi[3]), int(roi[0]):int(roi[0] + roi[2])]
 
+    return roi_image
+
+def get_HSV_colorspace(image_HSV: np.ndarray) -> np.ndarray:
+    # get baseline values for image HSV color space
     # initilize min and max HSV values with base values of pixel [0, 0]
-    hue_min, sat_min, val_min = roi_image[0, 0]
-    hue_max, sat_max, val_max = roi_image[0, 0]
+    hue_min, sat_min, val_min = image_HSV[0, 0]
+    hue_max, sat_max, val_max = image_HSV[0, 0]
 
     # iterate over ROI-pixels
-    for x in range(roi_image.shape[0]):
-        for y in range(roi_image.shape[1]):
-            hue, sat, val = roi_image[x, y]
+    for x in range(image_HSV.shape[0]):
+        for y in range(image_HSV.shape[1]):
+            hue, sat, val = image_HSV[x, y]
             # # debug
             # print(x, y)
             # print(hue, sat, val)
@@ -78,11 +80,17 @@ image = reduce_color(image, Color_reduction_divisor)
 # blur the image to reduce noise
 image = cv2.GaussianBlur(image, (gaussianBlurValue, gaussianBlurValue), 0)
 
+# select ROI
+image_roi = get_ROI(image)
+
 # convert to HSV image to enable Hue filtering
-hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+image_roi_hsv = cv2.cvtColor(image_roi, cv2.COLOR_BGR2HSV)
 
 # get ROI HSV color range
-hue_min, hue_max, sat_min, sat_max, val_min, val_max = get_ROI_HSV_colorspace(image)
+hue_min, hue_max, sat_min, sat_max, val_min, val_max = get_HSV_colorspace(image_roi_hsv)
+
+# convert original image to HSV
+image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
 # create sliders and initialize with min max values for HSV colorspace of ROI
 cv2.namedWindow("Slider")
@@ -114,7 +122,7 @@ while True:
     upper_bound = np.array([hue_max, sat_max, val_max])
 
     # create mask
-    mask = cv2.inRange(hsv_image, lower_bound, upper_bound)
+    mask = cv2.inRange(image_hsv, lower_bound, upper_bound)
 
     resulting_image = cv2.bitwise_and(image, image, mask=mask)
 

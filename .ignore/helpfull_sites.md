@@ -11,3 +11,6 @@ https://pyimagesearch.com/2021/01/19/image-masking-with-opencv/
 # contours
 #https://learnopencv.com/contour-detection-using-opencv-python-c/
 
+
+# SVG import issues in Fusion 360
+https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/SVG-file-imports-with-a-wrong-scale-into-Fusion-360.html
