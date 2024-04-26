@@ -2,7 +2,7 @@
 import numpy as np
 import cv2
 
-print("image processing loaded")
+print("image_processing loaded")
 
 ### Functions
 def do_nothing(nothing):
@@ -12,14 +12,15 @@ def do_nothing(nothing):
     '''
     pass
 
+
 def reduce_color(image: np.ndarray, color_divisor: int) -> np.ndarray:
     '''
     Quantize the color space of an image by a predefined divisor
     '''
     # multiply by div and add div // 2 to get closer to the original value
-    quantized = image // color_divisor * color_divisor + color_divisor // 2
+    quantized_image = image // color_divisor * color_divisor + color_divisor // 2
 
-    return quantized
+    return quantized_image
 
 def get_ROI(image: np.ndarray) -> np.ndarray:
     # select ROI (region of interest)
@@ -31,15 +32,15 @@ def get_ROI(image: np.ndarray) -> np.ndarray:
     return roi_image
 
 def get_HSV_colorspace(image_HSV: np.ndarray) -> np.ndarray:
-    # select ROI (region of interest) to get baseline values for background color space
+    # get baseline values for image HSV color space
     # initilize min and max HSV values with base values of pixel [0, 0]
-    hue_min, sat_min, val_min = roi_image[0, 0]
-    hue_max, sat_max, val_max = roi_image[0, 0]
+    hue_min, sat_min, val_min = image_HSV[0, 0]
+    hue_max, sat_max, val_max = image_HSV[0, 0]
 
     # iterate over ROI-pixels
-    for x in range(roi_image.shape[0]):
-        for y in range(roi_image.shape[1]):
-            hue, sat, val = roi_image[x, y]
+    for x in range(image_HSV.shape[0]):
+        for y in range(image_HSV.shape[1]):
+            hue, sat, val = image_HSV[x, y]
             # # debug
             # print(x, y)
             # print(hue, sat, val)
