@@ -1,4 +1,5 @@
-import image_processing
+from image_processing import image_processing
+
 # import cv2
 # import numpy as np
 

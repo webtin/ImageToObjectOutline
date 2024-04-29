@@ -1,4 +1,6 @@
 ### Imports
+import image_processing.constants as c
+
 import numpy as np
 import cv2
 
