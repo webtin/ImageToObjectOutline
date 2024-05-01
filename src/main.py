@@ -1,4 +1,4 @@
-from image_processing import image_processing
+from image_processing import *
 
 # import cv2
 # import numpy as np
@@ -32,12 +32,13 @@ image = cv2.GaussianBlur(image, (gaussian_blur_value, gaussian_blur_value), 0)
 image_roi = get_ROI(image)
 # convert to HSV image to enable Hue filtering
 image_roi_hsv = cv2.cvtColor(image_roi, cv2.COLOR_BGR2HSV)
+# cv2.imshow("roiHSV",image_roi_hsv)
 # get ROI HSV color range
 hue_min, hue_max, sat_min, sat_max, val_min, val_max = get_HSV_colorspace(image_roi_hsv)
 # convert original image to HSV
 image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-cv2.imshow('ima', image)
+# cv2.imshow('ima', image)
 
 # create sliders and initialize with min max values for HSV colorspace of ROI
 cv2.namedWindow("Slider")
@@ -70,6 +71,8 @@ while True:
 
         # get ROI HSV color range
         hue_min, hue_max, sat_min, sat_max, val_min, val_max = get_HSV_colorspace(image_roi_hsv)
+
+        
   
     # extract the values from the trackbar
     hue_min = cv2.getTrackbarPos("Hue Min", "Slider")
@@ -84,9 +87,12 @@ while True:
     # set bounds
     lower_bound = np.array([hue_min, sat_min, val_min])
     upper_bound = np.array([hue_max, sat_max, val_max])
+    print(lower_bound, upper_bound)
 
     # create mask
     mask = cv2.inRange(image_hsv, lower_bound, upper_bound)
+    cv2.imshow("Mask", mask)
+
 
     resulting_image = cv2.bitwise_and(image, image, mask=mask)
 

@@ -8,8 +8,6 @@ def do_nothing(nothing):
     '''
     pass
 
-# predefine some colors
-colors = [(0,255,0), (0,0,255), (255,0,0), (255,0,255), (0,255,255), (255,255,0), (255,255,255), (0,0,0), (128,128,128), (192,192,192)]  # Define different colors
 
 # load orignal image
 image = cv2.imread("data\source_images\PXL_20240326_134928380_2.jpg")
