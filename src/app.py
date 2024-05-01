@@ -43,7 +43,7 @@ def main_loop():
 
     # default image
     elif choice == 'Use Example Picture':
-        image_file = 'default_image.jpg'
+        image_file = 'data\source_images\PXL_20240326_134928380_2.jpg'
         original_image = Image.open(image_file)
         st.session_state.image_available = True
         
