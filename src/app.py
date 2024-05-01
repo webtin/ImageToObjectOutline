@@ -47,7 +47,7 @@ def main_loop():
         image_file = 'default_image.jpg'
         original_image = Image.open(image_file)
         st.session_state.image_available = True
-    
+        
     try:
         original_image
     except:
