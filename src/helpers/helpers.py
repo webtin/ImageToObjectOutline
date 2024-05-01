@@ -30,6 +30,30 @@ def convert_dict_to_tuple(data):
     bottom = top + height
     return (left, right, top, bottom)
 
+def calculate_corner_points(width, height, percentage):
+
+    # Calculate the size of the inner rectangle
+    inner_width = width * percentage / 100
+    inner_height = height * percentage / 100
+
+    # Calculate the corner points
+    x_left =   int((width - inner_width) / 2)
+    x_right =  int(x_left + inner_width)
+    y_top =    int((height - inner_height) / 2)
+    y_bottom = int(y_top + inner_height)
+
+    return (x_left, x_right, y_top, y_bottom)
+
+import cv2
+
+def draw_colored_rect(image, coordinates, color=(0, 0, 255)):
+    x_left, x_right, y_top, y_bottom = coordinates
+    
+    # Draw a colored rectangle on the image
+    image_with_rect = cv2.rectangle(image.copy(), (int(x_left), int(y_top)), (int(x_right), int(y_bottom)), color, 2)
+    
+    return image_with_rect
+
 def get_color_reduction_divisor(color_reduction_factor):
     if color_reduction_factor == 1:
         return 16

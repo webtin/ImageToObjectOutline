@@ -25,7 +25,6 @@ def main_loop():
     options = ['Upload Picture', 'Take Picture with Camera', 'Use Example Picture']
     choice = st.radio('Choose an option', options)
 
-    print("uploader")
     if choice == 'Upload Picture':
         image_file = st.file_uploader("Upload Your Image", type=['jpg', 'png', 'jpeg'], accept_multiple_files=False, )
         if not image_file:
@@ -70,18 +69,18 @@ def main_loop():
             with st.expander("Tutorial", expanded=False):
                 st.markdown(
                     '''
-                    ### Step 1: Select Background
-
-                    - Use the bounding box to select a portion of the background of your image.
-                    - The color space of the background will be used to filter out your objects.
-
-                    ### Step 2: Sidebar Sliders
+                    ### Step 1: Adjust The Image
 
                     - Adjust the following sliders on the sidebar:
                     - Color Reduction: To achieve a more even background color.
                     - Blur: To reduce noise.
                     - Color Space Deviation: To broaden the colorspace.
                     - Advanced: You can manually fine adjust the colorspace by using the sliders.
+
+                    ### Step 2: Select Background Area
+
+                    - Use the bounding box to select a portion of the background of your image.
+                    - The color space of the background will be used to filter out your objects.
 
                     ### Step 3: Check Mask
 
@@ -108,6 +107,7 @@ def main_loop():
             # lookup color reduction divisor
             color_reduction_divisor = get_color_reduction_divisor(color_reduction_factor)
 
+
             # convert PIL Image to np Array to use with cv2
             processed_image_np = np.array(original_image)
 
@@ -119,56 +119,33 @@ def main_loop():
             if apply_color_reduction:
                 processed_image_np = reduce_color(processed_image_np, color_reduction_divisor)
 
+            ## voordinate persistance workaround
             # Select background area
-            st.text("Select Background Area")
-
-            print("coordinates_available_flag", coordinates_available_flag)
-            if coordinates_available_flag:
-                cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', default_coords=coordinates, return_type="both")
-                print("coordinates available, use coordinates")
-                print("coordinates", coordinates)
-            else:
-                cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
-                print("no coordinates, generate default")
-                print("coordinates", coordinates)
-                coordinates_available_flag = True
-            print("coordinates_available_flag", coordinates_available_flag)
-
-            # #TODO: add persistant coordinates
-            # print("locals:")
-            # for each in locals():
-            #     print(each)
-            # print()
-
-            # print("globals:")
-            # for each in globals():
-            #     print(each)
-            # print()
-
-            # if 'coordinates' in locals():
-            #     print("coordinates", coordinates)
-            #     cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', default_coords=coordinates, return_type="both")
-            # else:
-            #     print("no coordinates, generate default")
-            #     cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
-
-            # print(coordintes)
-            # try: 
-            #     coordinates
-            #     cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', default_coords=coordinates, return_type="both")
-            #     print("entered try")
-            # except:
-            #     cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
-            #     print("entered except")
-            # print("coordinates", coordinates) 
-            #debug
-            # coordinates = {'left': 300, 'top': 300, 'width': 200, 'height': 200}
+            # st.text("Select Background Area")
+            # cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
+            # # format coordinates
             # coordinates = convert_dict_to_tuple(coordinates)
-            # cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', default_coords=coordinates, return_type="both")
-            # print(coordinates)
+            # print("coordinates", coordinates)
 
-            # cropped_img = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF')
 
+            # # draw selected area
+            # processed_image_np = draw_colored_rect(processed_image_np, coordinates)
+
+            # st.image(cv2_to_pil(processed_image_np))
+
+
+            if 'coordinates' in st.session_state:
+                cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
+                
+                # print("coordinates formated", convert_dict_to_tuple(coordinates))
+                # print("coordinates old", coordinates)
+                # st.session_state.coordinates = convert_dict_to_tuple(coordinates)
+                # print("coordinates new", st.session_state.coordinates)
+            else:
+                st.session_state.coordinates = calculate_corner_points(image_width, image_height, 30)
+                # print("coordinates new", st.session_state.coordinates)
+                coordinates = st.session_state.coordinates
+                cropped_img = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="image")
         
             # create Mask from cropped image Colorspace
             # get HSV color range of selected area
@@ -196,15 +173,12 @@ def main_loop():
             # set bounds
             lower_bound = np.array([hue_min, sat_min, val_min])
             upper_bound = np.array([hue_max, sat_max, val_max])
-            print(lower_bound, upper_bound)
 
             # create mask
             image_hsv = RGB_to_HSV(processed_image_np)
             # st.image(image_hsv)
             
             mask = get_mask(image_hsv, lower_bound, upper_bound)
-            print("mask shape app.py")
-            print(mask.shape)
 
             st.text("mask")
             st.image(cv2_mask_to_pil(mask))
