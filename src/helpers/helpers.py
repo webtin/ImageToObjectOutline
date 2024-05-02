@@ -177,4 +177,4 @@ def create_dxf_from_contours(filename, points_list):
     doc.saveas(filename)
 
 # Call the function to create a DXF file with a line
-create_dxf_with_line("object_outlines.dxf")
+# create_dxf_with_line("object_outlines.dxf")

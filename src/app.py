@@ -234,13 +234,11 @@ def main_loop():
 
             # write_svg_file(contours, scaling_factor=1, height=image_height, width=image_width)
 
-        scaling_container = st.empty()
 
-        with scaling_container.container(border=True):
-            with st.expander("Adjust Scaling", expanded=True):
-                resized_image = 
-                point_1 = streamlit_image_coordinates(original_image)
-                print(point_1)
+        # with st.expander("Adjust Scaling", expanded=True):
+        #     resized_image = proportional_resize_image(original_image, 700, 700)
+        #     point_1 = streamlit_image_coordinates(resized_image)
+        #     print(point_1)
 
         export_container = st.empty()
 
@@ -256,9 +254,9 @@ def main_loop():
                 use_container_width=True
             )
 
-            if st.button("Export as DXF"):
-                points_list = convert_contours_to_list(contours)
-                create_dxf_from_contours("object_outlines.dxf", points_list)
+            # if st.button("Export as DXF"):
+            #     points_list = convert_contours_to_list(contours)
+            #     create_dxf_from_contours("object_outlines.dxf", points_list)
     
 if __name__ == '__main__':
     main_loop()
