@@ -21,7 +21,7 @@ gaussian_blur_value = 1
 default_image_path = (r"data\source_images\PXL_20240326_134928380_2.jpg")
 
 # predefine some colors
-colors = [(0,255,0), (0,0,255), (255,0,0), (255,0,255), (0,255,255), (255,255,0), (128,128,128), (192,192,192), (128,0,128), (128,128,0)]  # Define different colors
+colors = [(0,255,0), (0,0,255), (255,0,0), (255,0,255), (0,255,255), (255,255,0), (128,192,128), (192,192,192), (128,0,128), (128,128,0)]  # Define different colors
 
 # def random_rgb_generator(n):
 #     colors = []
@@ -34,7 +34,19 @@ colors = [(0,255,0), (0,0,255), (255,0,0), (255,0,255), (0,255,255), (255,255,0)
 #     return colors
 
 # colors = random_rgb_generator(10)
+def brighten_image(image, amount):
+    img_bright = cv2.convertScaleAbs(image, beta=amount)
+    return img_bright
 
+
+def blur_image(image, amount):
+    blur_img = cv2.GaussianBlur(image, (0, 0), amount)
+    return blur_img
+
+
+def enhance_details(img):
+    hdr = cv2.detailEnhance(img, sigma_s=12, sigma_r=0.15)
+    return hdr
 ### Functions
 def proportional_resize_image(image, max_height=None, max_width=None):
     width, height = image.size
@@ -131,7 +143,7 @@ def get_contours(mask: np.ndarray, outline_treshold: int, object_count: int) -> 
 
 def reduce_contours(contours: np.ndarray, epsilon_factor: int) -> np.ndarray:
     reduced_contours = []
-    for contour in longestContours:
+    for contour in contours:
         perimeter = cv2.arcLength(contour, True)
         epsilon = epsilon_factor * perimeter
         reduced_contour  = cv2.approxPolyDP(contour, epsilon, True)
@@ -139,12 +151,16 @@ def reduce_contours(contours: np.ndarray, epsilon_factor: int) -> np.ndarray:
 
     return reduced_contours
 
-def draw_contours(image: np.ndarray, contours: np.ndarray) -> np.ndarray:
+def invert_color(color):
+    r, g, b = color
+    return (255 - r, 255 - g, 255 - b)
+
+def draw_contours(image: np.ndarray, contours: np.ndarray, point_color: np.ndarray = (0, 0, 0)) -> np.ndarray:
     for i, contour in enumerate(contours):
         cv2.drawContours(image, [contour], -1, colors[i], 2)
         for point in contour:
             # print(tuple(point[0]))
-            cv2.circle(image, tuple(point[0]), 1, (0, 0, 0), -1)
+            cv2.circle(image, tuple(point[0]), 2, invert_color(colors[i]), -1)
 
     return image
 
@@ -198,7 +214,5 @@ def cv2_mask_to_pil(mask):
 def cv2_mask_to_RGB(mask):
     # Convert the cv2 mask from a NumPy array to an 8-bit grayscale image
     mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
-    print("mask shape")
-    print(mask.shape)
-
+    
     return mask

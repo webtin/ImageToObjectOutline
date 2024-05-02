@@ -1,7 +1,9 @@
 import numpy as np
 from PIL import Image
 import streamlit as st
+from streamlit_image_coordinates import streamlit_image_coordinates
 from streamlit_cropper import st_cropper
+
 
 
 from helpers import *
@@ -26,7 +28,7 @@ def main_loop():
     choice = st.radio('Choose an option', options)
 
     if choice == 'Upload Picture':
-        image_file = st.file_uploader("Upload Your Image", type=['jpg', 'png', 'jpeg'], accept_multiple_files=False, )
+        image_file = st.file_uploader("Upload Your Image", type=['jpg', 'png', 'jpeg'], accept_multiple_files=False)
         if not image_file:
             return None
         original_image = Image.open(image_file)
@@ -59,6 +61,7 @@ def main_loop():
         image_width, image_height = original_image.size    
         if image_width > max_image_width or image_height > max_image_height:
             original_image = proportional_resize_image(original_image, max_height=max_image_height, max_width=max_image_width)
+            image_width, image_height = original_image.size 
 
     # set preprocessing container
     preprocessing_container = st.empty()
@@ -180,11 +183,12 @@ def main_loop():
             
             mask = get_mask(image_hsv, lower_bound, upper_bound)
 
-            st.text("mask")
-            st.image(cv2_mask_to_pil(mask))
+            if st.checkbox("Show Mask"):
+                st.image(cv2_mask_to_pil(mask))
 
             masked_image = apply_mask(np.array(original_image), mask=mask)
 
+            st.text("Masked Image:")
             st.image(masked_image)
 
             st.text("Next Step: Generate Outline Vectors from Mask")
@@ -208,31 +212,53 @@ def main_loop():
                 outline_threshold = st.slider("Outline Threshold", min_value=0, max_value=255, value=128)
 
                 # simplify outline
-                simplify_outline = st.checkbox('Simplify Outline', value=True)
-                outline_simplify_rate = st.slider("Simplify Outline", min_value=0.5, max_value=5.0, value=1.5)
+                simplify_outline = st.checkbox('Reduce Number of Points', value=False)
+                outline_simplify_rate = st.slider("Reduction Factor", min_value=1, max_value=300, value=10)
             
             if apply_mask_blur:
                 mask = blur_image(mask, mask_blur_rate)
 
             contours = get_contours(mask, outline_threshold, outline_count)
 
+            if simplify_outline:
+                contours = reduce_contours(contours, outline_simplify_rate/100000)
+
             if st.checkbox("Show Outline on Mask"):
-                    
                 mask_contours = draw_contours(cv2_mask_to_RGB(mask), contours)
                 st.image(cv2_to_pil(mask_contours))
 
-            # print(contours)
             image_contours = draw_contours(np.array(original_image), contours)
             st.image(cv2_to_pil(image_contours))
 
+            # print("contours", contours)
+
+            # write_svg_file(contours, scaling_factor=1, height=image_height, width=image_width)
+
+        scaling_container = st.empty()
+
+        with scaling_container.container(border=True):
+            with st.expander("Adjust Scaling", expanded=True):
+                resized_image = 
+                point_1 = streamlit_image_coordinates(original_image)
+                print(point_1)
+
         export_container = st.empty()
 
-
         with export_container.container(border=True):
+        
+            # svg = write_svg(contours, scaling_factor=1, height=image_height, width=image_width)
+            # print("svg", svg)
+            st.download_button(
+                label="Download Outline Vectors as SVG",
+                data=write_svg(contours, scaling_factor=10, height=image_height, width=image_width),
+                file_name='outline_vector.svg',
+                mime='svg',
+                use_container_width=True
+            )
 
-            if st.button("Export", use_container_width=True):
-                export_path = export_contours(original_image, contours, simplify_outline, outline_simplify_rate)
-                 
+            if st.button("Export as DXF"):
+                points_list = convert_contours_to_list(contours)
+                create_dxf_from_contours("object_outlines.dxf", points_list)
     
 if __name__ == '__main__':
     main_loop()

@@ -2,32 +2,36 @@ import streamlit as st
 from streamlit_cropper import st_cropper
 from PIL import Image
 
-st.set_option('deprecation.showfileUploaderEncoding', False)
+def convert_coordinates_dict_to_tuple(data):
+    left = data['left'] + 2
+    top = data['top'] + 2
+    width = data['width']
+    height = data['height']
+    right = left + width + 4
+    bottom = top + height + 4
+    return (left, right, top, bottom)
 
 # Upload an image and set some options for demo purposes
 st.header("Cropper Demo")
-img_file = st.sidebar.file_uploader(label='Upload a file', type=['png', 'jpg'])
-realtime_update = st.sidebar.checkbox(label="Update in Real Time", value=True)
-box_color = st.sidebar.color_picker(label="Box Color", value='#0000FF')
-aspect_choice = st.sidebar.radio(label="Aspect Ratio", options=["1:1", "16:9", "4:3", "2:3", "Free"])
-aspect_dict = {
-    "1:1": (1, 1),
-    "16:9": (16, 9),
-    "4:3": (4, 3),
-    "2:3": (2, 3),
-    "Free": None
-}
-aspect_ratio = aspect_dict[aspect_choice]
 
-if img_file:
-    img = Image.open(img_file)
-    if not realtime_update:
-        st.write("Double click to save crop")
-    # Get a cropped image from the frontend
-    cropped_img = st_cropper(img, realtime_update=realtime_update, box_color=box_color,
-                                aspect_ratio=aspect_ratio)
-    
-    # Manipulate cropped image at will
-    st.write("Preview")
-    _ = cropped_img.thumbnail((150,150))
+image = st.file_uploader("Upload Your Image", type=['jpg', 'png', 'jpeg'], accept_multiple_files=False)
+
+if image:
+    img_file = Image.open(image)
+
+    # check if coordinates already available, if not use cropper box algorythm
+    if 'coordinates' in st.session_state:
+        print("coordinates already available")
+        # st.session_state.coordinates = (10, 100, 10, 100)
+        print("before moving",st.session_state.coordinates)
+        cropped_img, st.session_state.coordinates= st_cropper(img_file, realtime_update=True, box_color='#0000FF', return_type="both", default_coords=st.session_state.coordinates)
+        st.session_state.coordinates = convert_coordinates_dict_to_tuple(st.session_state.coordinates)
+        print("after moving ", st.session_state.coordinates)
+
+    else:
+        print("no coordinates")
+        cropped_img, st.session_state.coordinates = st_cropper(img_file, realtime_update=True, box_color='#0000FF', return_type="both")
+        st.session_state.coordinates = convert_coordinates_dict_to_tuple(st.session_state.coordinates)
+        print("new coordinates", st.session_state.coordinates)
+
     st.image(cropped_img)
