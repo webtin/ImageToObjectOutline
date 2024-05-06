@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 import streamlit as st
 from streamlit_image_coordinates import streamlit_image_coordinates
 from streamlit_cropper import st_cropper
@@ -235,10 +235,53 @@ def main_loop():
             # write_svg_file(contours, scaling_factor=1, height=image_height, width=image_width)
 
 
-        # with st.expander("Adjust Scaling", expanded=True):
-        #     resized_image = proportional_resize_image(original_image, 700, 700)
-        #     point_1 = streamlit_image_coordinates(resized_image)
-        #     print(point_1)
+        with st.expander("Adjust Scaling", expanded=True):
+            st.text("Select two Points in the image and provide the distance between them in mm")
+
+            resized_image = proportional_resize_image(original_image, 700, 700)
+
+            if 'points' not in st.session_state:
+                st.session_state.points = []
+
+            print("points", st.session_state.points)
+
+            with st.echo("below"):
+                # with Image.open(resized_image) as img:
+                #     draw = ImageDraw.Draw(img)
+                with resized_image as img:
+                    draw = ImageDraw.Draw(img)
+
+                    # Draw an ellipse at each coordinate in points
+                    for point in st.session_state.points:
+                        draw.point(point, fill="red")
+
+                    clicked_point = streamlit_image_coordinates(resized_image)
+                    clicked_point = np.array([clicked_point['x'], clicked_point['y']])
+                    print("clicked_point", clicked_point)
+
+
+                    if len(st.session_state.points) >= 2:
+                        st.session_state.points.pop(0)
+                        st.session_state.points.append(clicked_point)
+                    else:
+                        st.session_state.points.append(clicked_point)
+                    # if value is not None:
+                    #     point = value["x"], value["y"]
+
+                    #     if point not in st.session_state["points"]:
+                    #         st.session_state["points"].append(point)
+                    #         st.experimental_rerun()
+
+
+            distance = st.text_input("Distance Between Points in mm", value="50")
+
+            if len(st.session_state.points) == 2:
+                pixel_distance = np.linalg.norm(st.session_state.points[0] - st.session_state.points[1])
+                print("pixel_distance", pixel_distance)
+                pixel_per_mm = pixel_distance / float(distance)
+
+                st.text("Pixels/mm: " + str(pixel_per_mm))
+
 
         export_container = st.empty()
 

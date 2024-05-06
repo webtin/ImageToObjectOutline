@@ -1,7 +1,7 @@
 ### Imports
 import numpy as np
 import cv2
-from PIL import Image
+from PIL import Image, ImageDraw
 import random
 
 print("image_processing loaded")
