@@ -4,6 +4,14 @@ from ezdxf import units
 import numpy as np
 import streamlit as st
 
+def get_ellipse_coords(point: tuple[int, int], radius: int) -> tuple[int, int, int, int]:
+    center = point
+    return (
+        center[0] - radius,
+        center[1] - radius,
+        center[0] + radius,
+        center[1] + radius,
+    )
 
 def int_to_uint8(value):
     # Clip the integer value to the range of uint8 (0 to 255) and convert to uint8
