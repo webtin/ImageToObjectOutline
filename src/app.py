@@ -1,3 +1,4 @@
+from io import StringIO
 import numpy as np
 from PIL import Image, ImageDraw
 import streamlit as st
@@ -174,8 +175,6 @@ def main_loop():
                 val_min = int_to_uint8(st.slider("val min", min_value=0, max_value=255, value=val_min))
                 val_max = int_to_uint8(st.slider("val max", min_value=0, max_value=255, value=val_max))
 
-            # print(hue_min, hue_max, sat_min, sat_max, val_min, val_max)
-
             # set bounds
             lower_bound = np.array([hue_min, sat_min, val_min])
             upper_bound = np.array([hue_max, sat_max, val_max])
@@ -233,17 +232,13 @@ def main_loop():
             image_contours = draw_contours(np.array(original_image), contours)
             st.image(cv2_to_pil(image_contours))
 
-            # print("contours", contours)
-
-            # write_svg_file(contours, scaling_factor=1, height=image_height, width=image_width)
-
-
         with st.expander("Adjust Scaling", expanded=True):
             st.text("Select two Points in the image and provide the distance between them in mm")
 
-            resized_image, scaling_factor = proportional_resize_image(original_image, 700, 700)
+            resized_image_x_size, resized_image_y_size = 700, 700
 
-            print("scaling factor", scaling_factor)
+            resized_image, scaling_factor = proportional_resize_image(original_image, resized_image_x_size, resized_image_y_size)
+
             with resized_image as img:
 
                 draw = ImageDraw.Draw(img)
@@ -272,20 +267,22 @@ def main_loop():
                         st.session_state.points.append(clicked_point)
 
                     st.rerun()
+            
+            if st.button("Reset", use_container_width=True):
+                st.session_state.points = []
+                st.rerun()
 
+            distance = st.text_input("Distance Between Points in mm", value="50")
 
             # calculate distance between two points
             if len(st.session_state.points) == 2:
                 point_a, point_b = st.session_state.points
                 pixel_distance = np.linalg.norm(np.array(point_a) - np.array(point_b))
+
                 st.write(f"Distance between points: {pixel_distance:.2f} Pixels")
-                print("pixel_distance", pixel_distance)
 
-            distance = st.text_input("Distance Between Points in mm", value="50")
-
-            pixel_per_mm = pixel_distance / float(distance)
-
-            st.text("Pixels/mm: " + str(pixel_per_mm))
+                pixel_per_mm = pixel_distance / float(distance)
+                st.text("Pixels/mm: " + str(pixel_per_mm))
 
 
         export_container = st.empty()
@@ -302,10 +299,24 @@ def main_loop():
             #     use_container_width=True
             # )
 
-            if st.button("Export as DXF"):
+            if st.button("Generate DXF File", use_container_width=True):
                 points_list = convert_contours_to_list(contours)
+                points_list = mirror_points_around_center(points_list, resized_image_x_size, resized_image_y_size, 'x')
                 points_list = scale_points_list(points_list, pixel_per_mm, scaling_factor)
-                create_dxf_from_contours("object_outlines.dxf", points_list)
+                # create_dxf_from_contours("object_outlines.dxf", points_list)
+                dxf = create_dxf_from_contours("object_outlines.dxf", points_list)
+                
+                # write dxf to file using st_DownloadButton
+                with open('object_outlines.dxf', 'wb') as f:
+                    f.write(bytes(dxf, 'utf-8'))
+                st.download_button(
+                    label="Download Outline Vectors as DXF (file)",
+                    data=open('object_outlines.dxf', 'rb'),
+                    file_name='outline_vector.dxf',
+                    mime='dxf',
+                    use_container_width=True
+                )
+
     
 if __name__ == '__main__':
     main_loop()

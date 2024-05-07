@@ -1,48 +1,23 @@
-import streamlit as st
-from PIL import Image, ImageDraw
+def mirror_points_around_center(points):
+    # Calculate the center of the points
+    total_x = 0
+    total_y = 0
+    for point in points:
+        total_x += point[0]
+        total_y += point[1]
+    center_x = total_x / len(points)
+    center_y = total_y / len(points)
 
-from streamlit_image_coordinates import streamlit_image_coordinates
+    # Mirror the points around the center
+    mirrored_points = []
+    for point in points:
+        mirrored_x = 2 * center_x - point[0]
+        mirrored_y = 2 * center_y - point[1]
+        mirrored_points.append((mirrored_x, mirrored_y))
 
-st.set_page_config(
-    page_title="Streamlit Image Coordinates: Image Update",
-    page_icon="🎯",
-    layout="wide",
-)
+    return mirrored_points
 
-"# :dart: Streamlit Image Coordinates: Image Update"
-
-if "points" not in st.session_state:
-    st.session_state["points"] = []
-
-
-"## Click on image"
-
-
-def get_ellipse_coords(point: tuple[int, int]) -> tuple[int, int, int, int]:
-    center = point
-    radius = 10
-    return (
-        center[0] - radius,
-        center[1] - radius,
-        center[0] + radius,
-        center[1] + radius,
-    )
-
-
-with st.echo("below"):
-    with Image.open('data/source_images/PXL_20240326_134928380_1.jpg') as img:
-        draw = ImageDraw.Draw(img)
-
-        # Draw an ellipse at each coordinate in points
-        for point in st.session_state["points"]:
-            coords = get_ellipse_coords(point)
-            draw.ellipse(coords, fill="red")
-
-        value = streamlit_image_coordinates(img, key="pil")
-
-        if value is not None:
-            point = value["x"], value["y"]
-
-            if point not in st.session_state["points"]:
-                st.session_state["points"].append(point)
-                st.experimental_rerun()
+# Example usage
+points = [(1, 2), (3, 4), (5, 6)]
+mirrored_points = mirror_points_around_center(points)
+print(mirrored_points)
