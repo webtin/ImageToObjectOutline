@@ -20,6 +20,9 @@ def main_loop():
     # set coordinates available flag
     coordinates_available_flag = False
 
+    # initialize scaling factor to 1
+    pixel_per_mm = 1
+
     # add text
     st.title("Get Object Outline from Image")
 
@@ -60,7 +63,7 @@ def main_loop():
 
         image_width, image_height = original_image.size    
         if image_width > max_image_width or image_height > max_image_height:
-            original_image = proportional_resize_image(original_image, max_height=max_image_height, max_width=max_image_width)
+            original_image, _ = proportional_resize_image(original_image, max_height=max_image_height, max_width=max_image_width)
             image_width, image_height = original_image.size 
 
     # set preprocessing container
@@ -238,8 +241,9 @@ def main_loop():
         with st.expander("Adjust Scaling", expanded=True):
             st.text("Select two Points in the image and provide the distance between them in mm")
 
-            resized_image = proportional_resize_image(original_image, 700, 700)
+            resized_image, scaling_factor = proportional_resize_image(original_image, 700, 700)
 
+            print("scaling factor", scaling_factor)
             with resized_image as img:
 
                 draw = ImageDraw.Draw(img)
@@ -270,35 +274,18 @@ def main_loop():
                     st.rerun()
 
 
-                # print("points", st.session_state.points) 
-
-
-            # if len(st.session_state.points) >= 1:
-            #     with resized_image as img:
-            #         draw = ImageDraw.Draw(img)
-
-            #         # Draw an ellipse at each coordinate in points
-            #         for point in st.session_state.points:
-            #             print("point:", point)
-            #             draw.ellipse((50, 50, 150, 150), fill="red")
-
-
-                # if value is not None:
-                #     point = value["x"], value["y"]
-
-                #     if point not in st.session_state["points"]:
-                #         st.session_state["points"].append(point)
-                #         st.experimental_rerun()
-
+            # calculate distance between two points
+            if len(st.session_state.points) == 2:
+                point_a, point_b = st.session_state.points
+                pixel_distance = np.linalg.norm(np.array(point_a) - np.array(point_b))
+                st.write(f"Distance between points: {pixel_distance:.2f} Pixels")
+                print("pixel_distance", pixel_distance)
 
             distance = st.text_input("Distance Between Points in mm", value="50")
 
-            # if len(st.session_state.points) == 2:
-            #     pixel_distance = np.linalg.norm(st.session_state.points[0] - st.session_state.points[1])
-            #     print("pixel_distance", pixel_distance)
-            #     pixel_per_mm = pixel_distance / float(distance)
+            pixel_per_mm = pixel_distance / float(distance)
 
-            #     st.text("Pixels/mm: " + str(pixel_per_mm))
+            st.text("Pixels/mm: " + str(pixel_per_mm))
 
 
         export_container = st.empty()
@@ -307,17 +294,18 @@ def main_loop():
         
             # svg = write_svg(contours, scaling_factor=1, height=image_height, width=image_width)
             # print("svg", svg)
-            st.download_button(
-                label="Download Outline Vectors as SVG",
-                data=write_svg(contours, scaling_factor=10, height=image_height, width=image_width),
-                file_name='outline_vector.svg',
-                mime='svg',
-                use_container_width=True
-            )
+            # st.download_button(
+            #     label="Download Outline Vectors as SVG",
+            #     data=write_svg(contours, scaling_factor=10, height=image_height, width=image_width),
+            #     file_name='outline_vector.svg',
+            #     mime='svg',
+            #     use_container_width=True
+            # )
 
-            # if st.button("Export as DXF"):
-            #     points_list = convert_contours_to_list(contours)
-            #     create_dxf_from_contours("object_outlines.dxf", points_list)
+            if st.button("Export as DXF"):
+                points_list = convert_contours_to_list(contours)
+                points_list = scale_points_list(points_list, pixel_per_mm, scaling_factor)
+                create_dxf_from_contours("object_outlines.dxf", points_list)
     
 if __name__ == '__main__':
     main_loop()

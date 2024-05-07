@@ -186,3 +186,14 @@ def create_dxf_from_contours(filename, points_list):
 
 # Call the function to create a DXF file with a line
 # create_dxf_with_line("object_outlines.dxf")
+
+def scale_points_list(points_list, pixel_per_mm, scaling_factor):
+    scaled_points_list = []
+    for points in points_list:
+        scaled_points = []
+        for point in points:
+            scaled_x = scaling_factor * point[0] / pixel_per_mm
+            scaled_y = scaling_factor * point[1] / pixel_per_mm
+            scaled_points.append((scaled_x, scaled_y))
+        scaled_points_list.append(scaled_points)
+    return scaled_points_list

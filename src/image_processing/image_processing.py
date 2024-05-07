@@ -55,13 +55,15 @@ def proportional_resize_image(image, max_height=None, max_width=None):
         # Resize based on height
         new_height = max_height
         new_width = int(width * (max_height / height))
+        scaling_factor = new_height / height
     else:
         # Resize based on width
         new_width = max_width
-        new_height = int(height * (max_width / width))
+        new_height = int(height * (max_width / width))   
+        scaling_factor = new_width / width   
 
     image = image.resize((new_width, new_height))
-    return image
+    return image, scaling_factor
 
 def reduce_color(image: np.ndarray, color_divisor: int) -> np.ndarray:
     '''
