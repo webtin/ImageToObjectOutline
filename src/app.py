@@ -164,13 +164,35 @@ def main_loop():
             st.text("Masked Image:")
             st.image(masked_image)
 
-            st.text("Next Step: Generate Outline Vectors from Mask")
-
-
         outline_container = st.empty()    
 
         with outline_container.container(border=True):
-            st.text("Generate Outline Vectors from Mask")
+            st.title("Step 2: Generate Outline")
+            with st.expander("Tutorial", expanded=False):
+                st.markdown(
+                    '''
+                    ### Step 5: Define Number of Objects
+
+                    - Use the slider in the sidebar to pack the number of objects
+                    - The biggest objects will be picked first
+
+                    ### Step 6: Define Outline Threshold And Blur the Mask
+
+                    - By blurring the Mask and Adjusting the Outline Threshold you can increase the size of the outline
+                    - You can use the Checkbox to show the Outlines overlayed on the mask to see your results better
+
+                    ### Step 7: Reduce the Number of Points (optional)
+
+                    - You can reduce the number of points by using the slider
+                    - Less points make it easier to handle and manipulate the outline in CAD-Software
+
+                    ### Step 8: Adjust Scaling (optional)
+
+                    - Select two Points in the image below and provide the distance between them in mm
+                    - This will automatically size your DXF file correctly
+                    - Use any reference in your Image
+                    - You can just measure any object and provide the distance
+                    ''')
 
             # add sidebar slider
             with st.sidebar.expander("Adjust Outline", expanded=True):
@@ -203,62 +225,67 @@ def main_loop():
             image_contours = draw_contours(np.array(original_image), contours)
             st.image(cv2_to_pil(image_contours))
 
-        with st.expander("Adjust Scaling", expanded=True):
-            st.text("Select two Points in the image and provide the distance between them in mm to get the right scaling in the exported DXF file.")
+            with st.expander("Adjust Scaling (Optional)", expanded=True):
+                st.markdown(
+                    '''
+                    Select two Points in the image and provide the distance between them in mm to get the right scaling in the exported DXF file. 
+                    ''')
 
-            resized_image_x_size, resized_image_y_size = 700, 700
 
-            resized_image, scaling_factor = proportional_resize_image(original_image, resized_image_x_size, resized_image_y_size)
+                resized_image_x_size, resized_image_y_size = 700, 700
 
-            with resized_image as img:
+                resized_image, scaling_factor = proportional_resize_image(original_image, resized_image_x_size, resized_image_y_size)
 
-                draw = ImageDraw.Draw(img)
+                with resized_image as img:
 
-                if 'points' not in st.session_state:
-                    st.session_state.points = []
+                    draw = ImageDraw.Draw(img)
 
-                for point in st.session_state.points:
-                    draw.ellipse(get_ellipse_coords(point, 2), fill="red")
+                    if 'points' not in st.session_state:
+                        st.session_state.points = []
 
-                if len(st.session_state.points) == 2:
-                    coordinates_tuple = tuple(coord for tup in st.session_state.points for coord in tup)
-                    draw.line(coordinates_tuple, fill="red", width=1)
+                    for point in st.session_state.points:
+                        draw.ellipse(get_ellipse_coords(point, 2), fill="red")
 
-                # get clicked point and transform into np array
-                clicked_point = streamlit_image_coordinates(resized_image)
+                    if len(st.session_state.points) == 2:
+                        coordinates_tuple = tuple(coord for tup in st.session_state.points for coord in tup)
+                        draw.line(coordinates_tuple, fill="red", width=1)
+
+                    # get clicked point and transform into np array
+                    clicked_point = streamlit_image_coordinates(resized_image)
+                    
+                    if clicked_point is not None:
+                        clicked_point = tuple([clicked_point['x'], clicked_point['y']])
+
+                        # store only last two points
+                        if len(st.session_state.points) >= 2:
+                            st.session_state.points.pop(0)
+                            st.session_state.points.append(clicked_point)
+                        else:
+                            st.session_state.points.append(clicked_point)
+
+                        st.rerun()
                 
-                if clicked_point is not None:
-                    clicked_point = tuple([clicked_point['x'], clicked_point['y']])
-
-                    # store only last two points
-                    if len(st.session_state.points) >= 2:
-                        st.session_state.points.pop(0)
-                        st.session_state.points.append(clicked_point)
-                    else:
-                        st.session_state.points.append(clicked_point)
-
+                if st.button("Reset", use_container_width=True):
+                    st.session_state.points = []
                     st.rerun()
-            
-            if st.button("Reset", use_container_width=True):
-                st.session_state.points = []
-                st.rerun()
 
-            distance = st.text_input("Distance Between Points in mm", value="50")
+                distance = st.text_input("Distance Between Points in mm", value="50")
 
-            # calculate distance between two points
-            if len(st.session_state.points) == 2:
-                point_a, point_b = st.session_state.points
-                pixel_distance = np.linalg.norm(np.array(point_a) - np.array(point_b))
+                # calculate distance between two points
+                if len(st.session_state.points) == 2:
+                    point_a, point_b = st.session_state.points
+                    pixel_distance = np.linalg.norm(np.array(point_a) - np.array(point_b))
 
-                st.write(f"Distance between points: {pixel_distance:.2f} Pixels")
+                    st.write(f"Distance between points: {pixel_distance:.2f} Pixels")
 
-                pixel_per_mm = pixel_distance / float(distance)
-                st.text("Pixels/mm: " + str(pixel_per_mm))
+                    pixel_per_mm = pixel_distance / float(distance)
+                    st.text("Pixels/mm: " + str(pixel_per_mm))
 
 
         export_container = st.empty()
 
         with export_container.container(border=True):
+            st.title("Step 3: Export DXF File")
         
             # svg = write_svg(contours, scaling_factor=1, height=image_height, width=image_width)
             # print("svg", svg)
