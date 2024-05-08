@@ -4,8 +4,6 @@ import cv2
 from PIL import Image, ImageDraw
 import random
 
-print("image_processing loaded")
-
 ### Defaults
 
 # Define the color-divisor to split the color space 
@@ -38,16 +36,14 @@ def brighten_image(image, amount):
     img_bright = cv2.convertScaleAbs(image, beta=amount)
     return img_bright
 
-
 def blur_image(image, amount):
     blur_img = cv2.GaussianBlur(image, (0, 0), amount)
     return blur_img
 
-
 def enhance_details(img):
     hdr = cv2.detailEnhance(img, sigma_s=12, sigma_r=0.15)
     return hdr
-### Functions
+
 def proportional_resize_image(image, max_height=None, max_width=None):
     width, height = image.size
 

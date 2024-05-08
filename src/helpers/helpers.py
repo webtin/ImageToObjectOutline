@@ -2,7 +2,6 @@ import cv2
 import ezdxf
 from ezdxf import units
 import numpy as np
-import streamlit as st
 from io import StringIO
 
 def get_ellipse_coords(point: tuple[int, int], radius: int) -> tuple[int, int, int, int]:
@@ -29,7 +28,6 @@ def convert_coordinates_dict_to_tuple(data):
     return (left, right, top, bottom)
 
 def calculate_corner_points(width, height, percentage):
-
     # Calculate the size of the inner rectangle
     inner_width = width * percentage / 100
     inner_height = height * percentage / 100
@@ -41,8 +39,6 @@ def calculate_corner_points(width, height, percentage):
     y_bottom = int(y_top + inner_height)
 
     return (x_left, x_right, y_top, y_bottom)
-
-import cv2
 
 def draw_colored_rect(image, coordinates, color=(0, 0, 255)):
     x_left, x_right, y_top, y_bottom = coordinates

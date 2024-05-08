@@ -1,25 +1,20 @@
-from io import StringIO
 import numpy as np
 from PIL import Image, ImageDraw
 import streamlit as st
-from streamlit_image_coordinates import streamlit_image_coordinates
 from streamlit_cropper import st_cropper
-
-
+from streamlit_image_coordinates import streamlit_image_coordinates
 
 from helpers import *
 from image_processing import * 
 
-
 def main_loop():
-    print()
 
     # set image_available flag, so that script does not continue without valid image
     if 'image_available' not in st.session_state:
         st.session_state.image_available = False
 
-    # set coordinates available flag
-    coordinates_available_flag = False
+    # set max image size
+    max_image_width, max_image_height = 1000, 1000
 
     # initialize scaling factor to 1
     pixel_per_mm = 1
@@ -60,8 +55,6 @@ def main_loop():
 
     # resize image
     if st.session_state.image_available:
-        max_image_width, max_image_height = 1000, 1000
-
         image_width, image_height = original_image.size    
         if image_width > max_image_width or image_height > max_image_height:
             original_image, _ = proportional_resize_image(original_image, max_height=max_image_height, max_width=max_image_width)
@@ -114,7 +107,6 @@ def main_loop():
             # lookup color reduction divisor
             color_reduction_divisor = get_color_reduction_divisor(color_reduction_factor)
 
-
             # convert PIL Image to np Array to use with cv2
             processed_image_np = np.array(original_image)
 
@@ -126,31 +118,12 @@ def main_loop():
             if apply_color_reduction:
                 processed_image_np = reduce_color(processed_image_np, color_reduction_divisor)
 
-            ## voordinate persistance workaround
-            # Select background area
-            # st.text("Select Background Area")
-            # cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
-            # # format coordinates
-            # coordinates = convert_dict_to_tuple(coordinates)
-            # print("coordinates", coordinates)
-
-
-            # # draw selected area
-            # processed_image_np = draw_colored_rect(processed_image_np, coordinates)
-
-            # st.image(cv2_to_pil(processed_image_np))
-
-
+            # crop image to background
             if 'coordinates' in st.session_state:
                 cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
-                
-                # print("coordinates formated", convert_dict_to_tuple(coordinates))
-                # print("coordinates old", coordinates)
-                # st.session_state.coordinates = convert_dict_to_tuple(coordinates)
-                # print("coordinates new", st.session_state.coordinates)
+
             else:
                 st.session_state.coordinates = calculate_corner_points(image_width, image_height, 30)
-                # print("coordinates new", st.session_state.coordinates)
                 coordinates = st.session_state.coordinates
                 cropped_img = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="image")
         
@@ -181,8 +154,6 @@ def main_loop():
 
             # create mask
             image_hsv = RGB_to_HSV(processed_image_np)
-            # st.image(image_hsv)
-            
             mask = get_mask(image_hsv, lower_bound, upper_bound)
 
             if st.checkbox("Show Mask"):
@@ -233,7 +204,7 @@ def main_loop():
             st.image(cv2_to_pil(image_contours))
 
         with st.expander("Adjust Scaling", expanded=True):
-            st.text("Select two Points in the image and provide the distance between them in mm")
+            st.text("Select two Points in the image and provide the distance between them in mm to get the right scaling in the exported DXF file.")
 
             resized_image_x_size, resized_image_y_size = 700, 700
 
