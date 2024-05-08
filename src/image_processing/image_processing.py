@@ -1,10 +1,8 @@
 ### Imports
 import numpy as np
 import cv2
-from PIL import Image
+from PIL import Image, ImageDraw
 import random
-
-print("image_processing loaded")
 
 ### Defaults
 
@@ -38,16 +36,14 @@ def brighten_image(image, amount):
     img_bright = cv2.convertScaleAbs(image, beta=amount)
     return img_bright
 
-
 def blur_image(image, amount):
     blur_img = cv2.GaussianBlur(image, (0, 0), amount)
     return blur_img
 
-
 def enhance_details(img):
     hdr = cv2.detailEnhance(img, sigma_s=12, sigma_r=0.15)
     return hdr
-### Functions
+
 def proportional_resize_image(image, max_height=None, max_width=None):
     width, height = image.size
 
@@ -55,13 +51,15 @@ def proportional_resize_image(image, max_height=None, max_width=None):
         # Resize based on height
         new_height = max_height
         new_width = int(width * (max_height / height))
+        scaling_factor = new_height / height
     else:
         # Resize based on width
         new_width = max_width
-        new_height = int(height * (max_width / width))
+        new_height = int(height * (max_width / width))   
+        scaling_factor = new_width / width   
 
     image = image.resize((new_width, new_height))
-    return image
+    return image, scaling_factor
 
 def reduce_color(image: np.ndarray, color_divisor: int) -> np.ndarray:
     '''

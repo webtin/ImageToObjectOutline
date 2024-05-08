@@ -1,24 +1,23 @@
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 import streamlit as st
-from streamlit_image_coordinates import streamlit_image_coordinates
 from streamlit_cropper import st_cropper
-
-
+from streamlit_image_coordinates import streamlit_image_coordinates
 
 from helpers import *
 from image_processing import * 
 
-
 def main_loop():
-    print()
 
     # set image_available flag, so that script does not continue without valid image
     if 'image_available' not in st.session_state:
         st.session_state.image_available = False
 
-    # set coordinates available flag
-    coordinates_available_flag = False
+    # set max image size
+    max_image_width, max_image_height = 1000, 1000
+
+    # initialize scaling factor to 1
+    pixel_per_mm = 1
 
     # add text
     st.title("Get Object Outline from Image")
@@ -56,11 +55,9 @@ def main_loop():
 
     # resize image
     if st.session_state.image_available:
-        max_image_width, max_image_height = 1000, 1000
-
         image_width, image_height = original_image.size    
         if image_width > max_image_width or image_height > max_image_height:
-            original_image = proportional_resize_image(original_image, max_height=max_image_height, max_width=max_image_width)
+            original_image, _ = proportional_resize_image(original_image, max_height=max_image_height, max_width=max_image_width)
             image_width, image_height = original_image.size 
 
     # set preprocessing container
@@ -110,7 +107,6 @@ def main_loop():
             # lookup color reduction divisor
             color_reduction_divisor = get_color_reduction_divisor(color_reduction_factor)
 
-
             # convert PIL Image to np Array to use with cv2
             processed_image_np = np.array(original_image)
 
@@ -122,31 +118,12 @@ def main_loop():
             if apply_color_reduction:
                 processed_image_np = reduce_color(processed_image_np, color_reduction_divisor)
 
-            ## voordinate persistance workaround
-            # Select background area
-            # st.text("Select Background Area")
-            # cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
-            # # format coordinates
-            # coordinates = convert_dict_to_tuple(coordinates)
-            # print("coordinates", coordinates)
-
-
-            # # draw selected area
-            # processed_image_np = draw_colored_rect(processed_image_np, coordinates)
-
-            # st.image(cv2_to_pil(processed_image_np))
-
-
+            # crop image to background
             if 'coordinates' in st.session_state:
                 cropped_img, coordinates = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="both")
-                
-                # print("coordinates formated", convert_dict_to_tuple(coordinates))
-                # print("coordinates old", coordinates)
-                # st.session_state.coordinates = convert_dict_to_tuple(coordinates)
-                # print("coordinates new", st.session_state.coordinates)
+
             else:
                 st.session_state.coordinates = calculate_corner_points(image_width, image_height, 30)
-                # print("coordinates new", st.session_state.coordinates)
                 coordinates = st.session_state.coordinates
                 cropped_img = st_cropper(cv2_to_pil(processed_image_np), realtime_update=True, box_color='#0000FF', return_type="image")
         
@@ -171,16 +148,12 @@ def main_loop():
                 val_min = int_to_uint8(st.slider("val min", min_value=0, max_value=255, value=val_min))
                 val_max = int_to_uint8(st.slider("val max", min_value=0, max_value=255, value=val_max))
 
-            # print(hue_min, hue_max, sat_min, sat_max, val_min, val_max)
-
             # set bounds
             lower_bound = np.array([hue_min, sat_min, val_min])
             upper_bound = np.array([hue_max, sat_max, val_max])
 
             # create mask
             image_hsv = RGB_to_HSV(processed_image_np)
-            # st.image(image_hsv)
-            
             mask = get_mask(image_hsv, lower_bound, upper_bound)
 
             if st.checkbox("Show Mask"):
@@ -191,13 +164,35 @@ def main_loop():
             st.text("Masked Image:")
             st.image(masked_image)
 
-            st.text("Next Step: Generate Outline Vectors from Mask")
-
-
         outline_container = st.empty()    
 
         with outline_container.container(border=True):
-            st.text("Generate Outline Vectors from Mask")
+            st.title("Step 2: Generate Outline")
+            with st.expander("Tutorial", expanded=False):
+                st.markdown(
+                    '''
+                    ### Step 5: Define Number of Objects
+
+                    - Use the slider in the sidebar to pack the number of objects
+                    - The biggest objects will be picked first
+
+                    ### Step 6: Define Outline Threshold And Blur the Mask
+
+                    - By blurring the Mask and Adjusting the Outline Threshold you can increase the size of the outline
+                    - You can use the Checkbox to show the Outlines overlayed on the mask to see your results better
+
+                    ### Step 7: Reduce the Number of Points (optional)
+
+                    - You can reduce the number of points by using the slider
+                    - Less points make it easier to handle and manipulate the outline in CAD-Software
+
+                    ### Step 8: Adjust Scaling (optional)
+
+                    - Select two Points in the image below and provide the distance between them in mm
+                    - This will automatically size your DXF file correctly
+                    - Use any reference in your Image
+                    - You can just measure any object and provide the distance
+                    ''')
 
             # add sidebar slider
             with st.sidebar.expander("Adjust Outline", expanded=True):
@@ -230,33 +225,96 @@ def main_loop():
             image_contours = draw_contours(np.array(original_image), contours)
             st.image(cv2_to_pil(image_contours))
 
-            # print("contours", contours)
+            with st.expander("Adjust Scaling (Optional)", expanded=True):
+                st.markdown(
+                    '''
+                    Select two Points in the image and provide the distance between them in mm to get the right scaling in the exported DXF file. 
+                    ''')
 
-            # write_svg_file(contours, scaling_factor=1, height=image_height, width=image_width)
 
+                resized_image_x_size, resized_image_y_size = 700, 700
 
-        # with st.expander("Adjust Scaling", expanded=True):
-        #     resized_image = proportional_resize_image(original_image, 700, 700)
-        #     point_1 = streamlit_image_coordinates(resized_image)
-        #     print(point_1)
+                resized_image, scaling_factor = proportional_resize_image(original_image, resized_image_x_size, resized_image_y_size)
+
+                with resized_image as img:
+
+                    draw = ImageDraw.Draw(img)
+
+                    if 'points' not in st.session_state:
+                        st.session_state.points = []
+
+                    for point in st.session_state.points:
+                        draw.ellipse(get_ellipse_coords(point, 2), fill="red")
+
+                    if len(st.session_state.points) == 2:
+                        coordinates_tuple = tuple(coord for tup in st.session_state.points for coord in tup)
+                        draw.line(coordinates_tuple, fill="red", width=1)
+
+                    # get clicked point and transform into np array
+                    clicked_point = streamlit_image_coordinates(resized_image)
+                    
+                    if clicked_point is not None:
+                        clicked_point = tuple([clicked_point['x'], clicked_point['y']])
+
+                        # store only last two points
+                        if len(st.session_state.points) >= 2:
+                            st.session_state.points.pop(0)
+                            st.session_state.points.append(clicked_point)
+                        else:
+                            st.session_state.points.append(clicked_point)
+
+                        st.rerun()
+                
+                if st.button("Reset", use_container_width=True):
+                    st.session_state.points = []
+                    st.rerun()
+
+                distance = st.text_input("Distance Between Points in mm", value="50")
+
+                # calculate distance between two points
+                if len(st.session_state.points) == 2:
+                    point_a, point_b = st.session_state.points
+                    pixel_distance = np.linalg.norm(np.array(point_a) - np.array(point_b))
+
+                    st.write(f"Distance between points: {pixel_distance:.2f} Pixels")
+
+                    pixel_per_mm = pixel_distance / float(distance)
+                    st.text("Pixels/mm: " + str(pixel_per_mm))
+
 
         export_container = st.empty()
 
         with export_container.container(border=True):
+            st.title("Step 3: Export DXF File")
         
             # svg = write_svg(contours, scaling_factor=1, height=image_height, width=image_width)
             # print("svg", svg)
-            st.download_button(
-                label="Download Outline Vectors as SVG",
-                data=write_svg(contours, scaling_factor=10, height=image_height, width=image_width),
-                file_name='outline_vector.svg',
-                mime='svg',
-                use_container_width=True
-            )
+            # st.download_button(
+            #     label="Download Outline Vectors as SVG",
+            #     data=write_svg(contours, scaling_factor=10, height=image_height, width=image_width),
+            #     file_name='outline_vector.svg',
+            #     mime='svg',
+            #     use_container_width=True
+            # )
 
-            # if st.button("Export as DXF"):
-            #     points_list = convert_contours_to_list(contours)
-            #     create_dxf_from_contours("object_outlines.dxf", points_list)
+            if st.button("Generate DXF File", use_container_width=True):
+                points_list = convert_contours_to_list(contours)
+                points_list = mirror_points_around_center(points_list, resized_image_x_size, resized_image_y_size, 'x')
+                points_list = scale_points_list(points_list, pixel_per_mm, scaling_factor)
+                # create_dxf_from_contours("object_outlines.dxf", points_list)
+                dxf = create_dxf_from_contours("object_outlines.dxf", points_list)
+                
+                # write dxf to file using st_DownloadButton
+                with open('object_outlines.dxf', 'wb') as f:
+                    f.write(bytes(dxf, 'utf-8'))
+                st.download_button(
+                    label="Download Outline Vectors as DXF (file)",
+                    data=open('object_outlines.dxf', 'rb'),
+                    file_name='outline_vector.dxf',
+                    mime='dxf',
+                    use_container_width=True
+                )
+
     
 if __name__ == '__main__':
     main_loop()

@@ -2,8 +2,16 @@ import cv2
 import ezdxf
 from ezdxf import units
 import numpy as np
-import streamlit as st
+from io import StringIO
 
+def get_ellipse_coords(point: tuple[int, int], radius: int) -> tuple[int, int, int, int]:
+    center = point
+    return (
+        center[0] - radius,
+        center[1] - radius,
+        center[0] + radius,
+        center[1] + radius,
+    )
 
 def int_to_uint8(value):
     # Clip the integer value to the range of uint8 (0 to 255) and convert to uint8
@@ -20,7 +28,6 @@ def convert_coordinates_dict_to_tuple(data):
     return (left, right, top, bottom)
 
 def calculate_corner_points(width, height, percentage):
-
     # Calculate the size of the inner rectangle
     inner_width = width * percentage / 100
     inner_height = height * percentage / 100
@@ -32,8 +39,6 @@ def calculate_corner_points(width, height, percentage):
     y_bottom = int(y_top + inner_height)
 
     return (x_left, x_right, y_top, y_bottom)
-
-import cv2
 
 def draw_colored_rect(image, coordinates, color=(0, 0, 255)):
     x_left, x_right, y_top, y_bottom = coordinates
@@ -121,26 +126,6 @@ def write_svg(contours, scaling_factor, height, width):
     
     return svg_content
 
-def create_dxf_with_line(filename):
-    # Create a new DXF document
-    doc = ezdxf.new()
-
-    # Create a new layer for the object outlines
-    doc.layers.new('Outlines')
-
-    # Create a new LINE entity
-    line = doc.modelspace().add_line(
-        start=(0, 0),
-        end=(100, 100),
-    )
-
-    # Set the layer and color of the line
-    line.layer = 'Outlines'
-    line.color = 1  # Red
-
-    # Save the DXF file
-    doc.saveas(filename)
-
 def convert_contours_to_list(contours):
     """
     Convert an outline to a list of points in the format [(x1, y1), (x2, y2), ...][(x1, y1), (x2, y2)].
@@ -155,6 +140,24 @@ def convert_contours_to_list(contours):
     # print(points_list)
     return points_list
 
+def mirror_points_around_center(points_list, x, y, axis):
+    mirrored_points_list = []
+    center_x, center_y = int(x/2), int(y/2)
+
+    for points in points_list:
+        mirrored_points = []
+        for point in points:
+            if axis == 'x':
+                mirrored_point = (center_x + (center_x - point[0]), point[1])
+            elif axis == 'y':
+                mirrored_point = (point[0], center_y + (center_y - point[1]))
+            else:
+                mirrored_point = (center_x + (center_x - point[0]), center_y + (center_y - point[1]))
+            mirrored_points.append(mirrored_point)
+        mirrored_points_list.append(mirrored_points)
+
+    return mirrored_points_list
+
 def create_dxf_from_contours(filename, points_list):
     # Create a new DXF document
     doc = ezdxf.new("R2000")
@@ -164,17 +167,21 @@ def create_dxf_from_contours(filename, points_list):
     for points in points_list:
         msp.add_lwpolyline(points)
 
-    # # Iterate over the contours and create LINE entities for each contour
-    # for contour in contours:
-    #     for i in range(len(contour) - 1):
-    #         start_point = contour[i]
-    #         end_point = contour[i + 1]
-    #         line = doc.modelspace().add_line(start=start_point, end=end_point)
-    #         line.layer = 'Outlines'
-    #         line.color = 1  # Red
+    # Save the DXF file StringIO
+    outputDXF = StringIO()
+    doc.write(outputDXF, fmt="asc")
+    dxf_content = outputDXF.getvalue()
+    outputDXF.close()
+    # print(data)
+    return dxf_content
 
-    # Save the DXF file with the provided filename
-    doc.saveas(filename)
-
-# Call the function to create a DXF file with a line
-# create_dxf_with_line("object_outlines.dxf")
+def scale_points_list(points_list, pixel_per_mm, scaling_factor):
+    scaled_points_list = []
+    for points in points_list:
+        scaled_points = []
+        for point in points:
+            scaled_x = scaling_factor * point[0] / pixel_per_mm
+            scaled_y = scaling_factor * point[1] / pixel_per_mm
+            scaled_points.append((scaled_x, scaled_y))
+        scaled_points_list.append(scaled_points)
+    return scaled_points_list
