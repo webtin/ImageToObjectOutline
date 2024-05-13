@@ -97,5 +97,8 @@ Enjoy streamlining your CAD workflow!
 
 ## Example Result 
 
-Tray for 3D printer Tools
-<img src="media/Tray_3D_printer_tools.jpg" width="100%"/>
+<p align="center">
+  <img src="media/Tray_3D_printer_tools.jpg" alt="Example Image" width="80%"/>
+  <br>
+  <em>Tray for 3D printer Tools</em>
+</p>
